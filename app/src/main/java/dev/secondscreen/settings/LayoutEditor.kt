@@ -60,7 +60,11 @@ import dev.secondscreen.config.nearestSize
 import dev.secondscreen.config.updatePage
 import dev.secondscreen.config.updateSpec
 import dev.secondscreen.config.widgetAt
+import androidx.compose.ui.text.input.KeyboardType
+import dev.secondscreen.data.rss.feedHost
+import dev.secondscreen.data.rss.normalizeFeedUrl
 import dev.secondscreen.ui.GridGeometry
+import dev.secondscreen.ui.LocalSettings
 import dev.secondscreen.ui.theme.Ink
 import dev.secondscreen.ui.theme.Type
 import dev.secondscreen.widgets.AllWidgetSpecs
@@ -88,6 +92,7 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
     val index = pageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
     val page = pages.getOrNull(index)
     val selected = page?.widgets?.firstOrNull { it.id == selectedId }
+    val knownFeeds = knownFeeds(pages, LocalSettings.current.rssUrl)
 
     fun selectPage(i: Int) {
         pageIndex = i
@@ -202,6 +207,26 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
         is EditorDialog.Add -> page?.let { p ->
             AddWidgetDialog(
                 onAdd = { spec ->
+                    if (spec is WidgetSpec.News) {
+                        // A news widget needs its feed first.
+                        dialog = EditorDialog.AddNews(d.col, d.row)
+                    } else {
+                        p.place(spec, WidgetSize.Small, d.col, d.row)?.let { updated ->
+                            onChange(pages.updatePage(index) { updated })
+                            selectedId = updated.widgets.last().id
+                        }
+                        dialog = null
+                    }
+                },
+                onDismiss = { dialog = null },
+            )
+        }
+        is EditorDialog.AddNews -> page?.let { p ->
+            NewsDialog(
+                heading = "Ajouter un flux RSS",
+                initial = WidgetSpec.News(title = ""),
+                known = knownFeeds,
+                onDone = { spec ->
                     p.place(spec, WidgetSize.Small, d.col, d.row)?.let { updated ->
                         onChange(pages.updatePage(index) { updated })
                         selectedId = updated.widgets.last().id
@@ -212,11 +237,17 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
             )
         }
         is EditorDialog.Params -> page?.widgets?.firstOrNull { it.id == d.widgetId }?.let { w ->
-            ParamsDialog(
-                spec = w.spec,
-                onDone = { spec -> editPage { it.updateSpec(w.id, spec) }; dialog = null },
-                onDismiss = { dialog = null },
-            )
+            val done = { spec: WidgetSpec -> editPage { it.updateSpec(w.id, spec) }; dialog = null }
+            when (val s = w.spec) {
+                is WidgetSpec.News -> NewsDialog(
+                    heading = s.displayName,
+                    initial = s,
+                    known = knownFeeds,
+                    onDone = done,
+                    onDismiss = { dialog = null },
+                )
+                else -> ParamsDialog(spec = s, onDone = done, onDismiss = { dialog = null })
+            }
         }
         EditorDialog.Rename -> page?.let { p ->
             TextDialog(
@@ -253,6 +284,7 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
 
 private sealed interface EditorDialog {
     data class Add(val col: Int, val row: Int) : EditorDialog
+    data class AddNews(val col: Int, val row: Int) : EditorDialog
     data class Params(val widgetId: String) : EditorDialog
     data object Rename : EditorDialog
     data object DeletePage : EditorDialog
@@ -469,11 +501,71 @@ private fun ParamsDialog(spec: WidgetSpec, onDone: (WidgetSpec) -> Unit, onDismi
                     Text("${d.count}", color = Ink.Fg, fontSize = 18.sp)
                     SmallAction("+", enabled = d.count < 5) { draft = d.copy(count = d.count + 1) }
                 }
-                is WidgetSpec.News -> Field("Titre", d.title, { draft = d.copy(title = it) })
                 else -> Unit
             }
         },
         confirmButton = { TextButton(onClick = { onDone(draft) }) { Text("OK", color = Ink.Fg) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler", color = Ink.Dim) } },
+    )
+}
+
+/** A feed the user can pick again: one already on a page, or the default from the settings. */
+private data class KnownFeed(val title: String, val url: String)
+
+private fun knownFeeds(pages: List<PageSpec>, defaultUrl: String): List<KnownFeed> {
+    val default = defaultUrl.trim()
+    val used = pages.flatMap { it.widgets }.mapNotNull { it.spec as? WidgetSpec.News }
+        .map { KnownFeed(it.title, it.url.trim().ifEmpty { default }) }
+    return (used + KnownFeed("", default))
+        .filter { it.url.isNotEmpty() }
+        .distinctBy { it.url }
+        .map { if (it.title.isBlank()) it.copy(title = feedHost(it.url) ?: "Actualités") else it }
+}
+
+/** Picks a news widget's feed: type any address, or tap one already in use. */
+@Composable
+private fun NewsDialog(
+    heading: String,
+    initial: WidgetSpec.News,
+    known: List<KnownFeed>,
+    onDone: (WidgetSpec.News) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var url by remember { mutableStateOf(initial.url) }
+    var title by remember { mutableStateOf(initial.title) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Ink.Card,
+        title = { Text(heading, color = Ink.Fg) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Field("Adresse du flux (URL)", url, { url = it }, keyboardType = KeyboardType.Uri)
+                Field("Titre (optionnel)", title, { title = it })
+                if (known.isNotEmpty()) {
+                    Text("Flux déjà utilisés", style = Type.bodySmall, color = Ink.Faint)
+                    known.forEach { feed ->
+                        val host = feedHost(feed.url)
+                        val label = if (host == null || host == feed.title) feed.title else "${feed.title} · $host"
+                        Chip(label, selected = normalizeFeedUrl(url) == feed.url) {
+                            url = feed.url
+                            title = feed.title
+                        }
+                    }
+                }
+                Text(
+                    "Sans adresse, le widget suit le flux RSS des réglages généraux.",
+                    style = Type.bodySmall,
+                    color = Ink.Faint,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val u = normalizeFeedUrl(url)
+                val t = title.trim().ifEmpty { feedHost(u) ?: "Actualités" }
+                onDone(WidgetSpec.News(title = t, url = u))
+            }) { Text("OK", color = Ink.Fg) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler", color = Ink.Dim) } },
     )
 }

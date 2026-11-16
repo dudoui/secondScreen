@@ -133,7 +133,7 @@ fun SettingsScreen(
                 }
                 Text(geoMsg ?: "Actuel : ${place.label}", style = Type.bodySmall, color = Ink.Faint)
 
-                Field("Flux RSS", rss, { rss = it }, keyboardType = KeyboardType.Uri)
+                Field("Flux RSS par défaut", rss, { rss = it }, keyboardType = KeyboardType.Uri)
 
                 Field("Mac — musique en cours (ex. 192.168.1.40:8765)", macHost, { macHost = it }, keyboardType = KeyboardType.Uri)
 

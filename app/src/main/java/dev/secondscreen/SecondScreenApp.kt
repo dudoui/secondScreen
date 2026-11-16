@@ -37,14 +37,21 @@ class AppContainer(context: Context) {
     /** What the widgets read: phone calendars + any iCal feeds. */
     val calendar = MergedCalendar(phoneCalendar, icsCalendar, scope)
     val weather = WeatherSource(cacheDir)
-    val news = RssSource(cacheDir)
+    private val feeds = HashMap<String, RssSource>()
+
+    /** The source for a news widget's feed; a blank [url] is the default feed from the settings. */
+    fun news(url: String): RssSource = synchronized(feeds) {
+        val key = url.trim()
+        feeds.getOrPut(key) {
+            RssSource(cacheDir, key.ifEmpty { null }).also { it.start(scope, settingsStore.flow) }
+        }
+    }
     val nowPlaying = NowPlayingSource()
 
     init {
         phoneCalendar.start(scope)
         icsCalendar.start(scope, settingsStore.flow)
         weather.start(scope, settingsStore.flow)
-        news.start(scope, settingsStore.flow)
         nowPlaying.start(scope, settingsStore.flow)
     }
 }

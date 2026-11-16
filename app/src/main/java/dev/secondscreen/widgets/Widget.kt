@@ -46,7 +46,8 @@ sealed interface WidgetSpec {
     @Serializable @SerialName("current_weather") data object CurrentWeather : WidgetSpec
     @Serializable @SerialName("hourly_forecast") data object HourlyForecast : WidgetSpec
     @Serializable @SerialName("daily_forecast") data object DailyForecast : WidgetSpec
-    @Serializable @SerialName("news") data class News(val title: String = "Le Monde") : WidgetSpec
+    /** [url] is this widget's own feed; blank means the default feed from the general settings. */
+    @Serializable @SerialName("news") data class News(val title: String = "Le Monde", val url: String = "") : WidgetSpec
     @Serializable @SerialName("now_playing") data object NowPlaying : WidgetSpec
 }
 
@@ -121,7 +122,7 @@ fun WidgetHost(w: PlacedWidget) {
             WidgetSpec.CurrentWeather -> CurrentWeatherWidget(w.size)
             WidgetSpec.HourlyForecast -> HourlyForecastWidget(w.size)
             WidgetSpec.DailyForecast -> DailyForecastWidget(w.size)
-            is WidgetSpec.News -> NewsWidget(s.title, w.size)
+            is WidgetSpec.News -> NewsWidget(s.title, s.url, w.size)
             WidgetSpec.NowPlaying -> NowPlayingWidget(w.size)
         }
     }
