@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import dev.secondscreen.i18n.S
+import dev.secondscreen.i18n.Strings
 
 private val Context.layoutDataStore by preferencesDataStore("layout")
 
@@ -16,8 +18,14 @@ private val Context.layoutDataStore by preferencesDataStore("layout")
 object LayoutCodec {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val serializer = ListSerializer(PageSpec.serializer())
-    /** Stable ids for the default layout across emissions. */
-    private val default by lazy { DefaultLayout.pages() }
+    /** Stable ids for the default layout across emissions; rebuilt when the language changes. */
+    private var cached: Pair<Strings, List<PageSpec>>? = null
+    private val default: List<PageSpec>
+        @Synchronized get() {
+            val s = S
+            cached?.takeIf { it.first === s }?.let { return it.second }
+            return DefaultLayout.pages().also { cached = s to it }
+        }
 
     fun encode(pages: List<PageSpec>): String = json.encodeToString(serializer, pages)
 

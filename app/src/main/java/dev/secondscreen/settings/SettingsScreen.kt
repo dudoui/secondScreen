@@ -36,6 +36,7 @@ import dev.secondscreen.data.weather.Geocoder
 import dev.secondscreen.ui.theme.Ink
 import dev.secondscreen.ui.theme.Type
 import kotlinx.coroutines.launch
+import dev.secondscreen.i18n.S
 
 @Composable
 fun SettingsScreen(
@@ -57,16 +58,16 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
 
     fun searchCity() {
-        geoMsg = "Recherche…"
+        geoMsg = S.searching
         scope.launch {
             geoMsg = try {
                 val p = Geocoder.search(cityQuery)
-                if (p == null) "Aucun résultat" else {
+                if (p == null) S.noResult else {
                     place = p
                     "${p.label} (${"%.3f".format(p.lat)}, ${"%.3f".format(p.lon)})"
                 }
             } catch (e: Exception) {
-                "Erreur : ${e.message}"
+                S.error(e.message)
             }
         }
     }
@@ -78,13 +79,13 @@ fun SettingsScreen(
             .padding(horizontal = 32.dp, vertical = 12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Réglages", fontSize = 22.sp, color = Ink.Fg)
+            Text(S.settings, fontSize = 22.sp, color = Ink.Fg)
             Spacer(Modifier.width(24.dp))
             SettingsTab.entries.forEach { t ->
                 TabButton(t.label, selected = t == tab) { tab = t }
             }
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = onCancel) { Text("Annuler", color = Ink.Dim) }
+            TextButton(onClick = onCancel) { Text(S.cancel, color = Ink.Dim) }
             TextButton(onClick = {
                 onSave(
                     initial.copy(
@@ -99,7 +100,7 @@ fun SettingsScreen(
                     ),
                     pages,
                 )
-            }) { Text("Enregistrer", color = Ink.Fg) }
+            }) { Text(S.save, color = Ink.Fg) }
         }
         Spacer(Modifier.height(8.dp))
 
@@ -114,35 +115,35 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Field(
-                    label = "Calendriers iCal supplémentaires (optionnel), un par ligne",
+                    label = S.icalLabel,
                     value = ics,
                     onChange = { ics = it },
                     singleLine = false,
                     keyboardType = KeyboardType.Uri,
                 )
                 Text(
-                    "Les agendas synchronisés sur ce téléphone sont lus automatiquement. Ajoutez ici d'autres agendas via leur adresse iCal.",
+                    S.icalHelp,
                     style = Type.bodySmall,
                     color = Ink.Faint,
                 )
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Field("Ville (météo)", cityQuery, { cityQuery = it }, Modifier.weight(1f))
+                    Field(S.cityLabel, cityQuery, { cityQuery = it }, Modifier.weight(1f))
                     Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = ::searchCity) { Text("Chercher", color = Ink.Fg) }
+                    TextButton(onClick = ::searchCity) { Text(S.search, color = Ink.Fg) }
                 }
-                Text(geoMsg ?: "Actuel : ${place.label}", style = Type.bodySmall, color = Ink.Faint)
+                Text(geoMsg ?: S.currentPlace(place.label), style = Type.bodySmall, color = Ink.Faint)
 
-                Field("Flux RSS par défaut", rss, { rss = it }, keyboardType = KeyboardType.Uri)
+                Field(S.defaultRssLabel, rss, { rss = it }, keyboardType = KeyboardType.Uri)
 
-                Field("Mac — musique en cours (ex. 192.168.1.40:8765)", macHost, { macHost = it }, keyboardType = KeyboardType.Uri)
+                Field(S.macLabel, macHost, { macHost = it }, keyboardType = KeyboardType.Uri)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Field("Nuit : début (h)", nightStart, { nightStart = it }, Modifier.weight(1f), keyboardType = KeyboardType.Number)
-                    Field("Nuit : fin (h)", nightEnd, { nightEnd = it }, Modifier.weight(1f), keyboardType = KeyboardType.Number)
+                    Field(S.nightStartLabel, nightStart, { nightStart = it }, Modifier.weight(1f), keyboardType = KeyboardType.Number)
+                    Field(S.nightEndLabel, nightEnd, { nightEnd = it }, Modifier.weight(1f), keyboardType = KeyboardType.Number)
                 }
                 Text(
-                    "La luminosité baisse au minimum la nuit. Maintenir le doigt immobile ~1 s sur le tableau pour revenir ici.",
+                    S.nightHelp,
                     style = Type.bodySmall,
                     color = Ink.Faint,
                 )
@@ -180,7 +181,15 @@ internal fun Field(
     )
 }
 
-private enum class SettingsTab(val label: String) { General("Général"), Pages("Pages") }
+private enum class SettingsTab {
+    General, Pages;
+
+    val label: String
+        get() = when (this) {
+            General -> S.tabGeneral
+            Pages -> S.tabPages
+        }
+}
 
 @Composable
 private fun TabButton(label: String, selected: Boolean, onClick: () -> Unit) {

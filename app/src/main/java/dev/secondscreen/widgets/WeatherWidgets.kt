@@ -53,9 +53,10 @@ import dev.secondscreen.ui.theme.Ink
 import dev.secondscreen.ui.theme.Type
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlin.math.roundToInt
+import dev.secondscreen.i18n.S
+import dev.secondscreen.i18n.capitalize
+import dev.secondscreen.i18n.formatter
 
 // ---- logic ---------------------------------------------------------------------------------
 
@@ -74,24 +75,23 @@ fun deg(t: Double) = if (t.isNaN()) "–" else "${t.roundToInt()}°"
 
 /** The one thing worth flagging about the weather right now, if any. */
 fun weatherAlert(w: Weather, now: LocalDateTime): Pair<String, Color>? {
-    if (WeatherCodes.isStorm(w.current.code)) return "Orage en cours" to Ink.Accent
+    if (WeatherCodes.isStorm(w.current.code)) return S.stormNow to Ink.Accent
     val soon = w.upcomingHours(now).drop(1).take(1)
     if (!WeatherCodes.isWet(w.current.code) && soon.any { it.precip >= 50 && WeatherCodes.isWet(it.code) }) {
-        return "Pluie dans l'heure" to Ink.Accent
+        return S.rainWithinTheHour to Ink.Accent
     }
-    if (w.upcomingHours(now).take(6).any { WeatherCodes.isStorm(it.code) }) return "Orages prévus" to Ink.Accent
+    if (w.upcomingHours(now).take(6).any { WeatherCodes.isStorm(it.code) }) return S.stormsExpected to Ink.Accent
     val today = w.today(now)
-    if (today != null && today.precip >= 60) return "Pluie probable · ${today.precip}%" to Ink.Warn
+    if (today != null && today.precip >= 60) return S.rainLikely(today.precip) to Ink.Warn
     return null
 }
 
-private val HOUR = DateTimeFormatter.ofPattern("H'h'")
-private val DAY_SHORT = DateTimeFormatter.ofPattern("EEE", Locale.FRENCH)
+private fun hourLabel(t: LocalDateTime): String = t.format(S.formatter(S.hourPattern))
 
 private fun dayName(d: LocalDate, today: LocalDate) = when (d) {
-    today -> "Auj."
-    today.plusDays(1) -> "Dem."
-    else -> d.format(DAY_SHORT).replaceFirstChar { it.titlecase(Locale.FRENCH) }
+    today -> S.todayAbbrev
+    today.plusDays(1) -> S.tomorrowAbbrev
+    else -> S.capitalize(d.format(S.formatter("EEE")))
 }
 
 // ---- current -------------------------------------------------------------------------------
@@ -136,9 +136,9 @@ fun CurrentWeatherWidget(size: WidgetSize) {
                         Spacer(Modifier.width(18.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(WeatherCodes.label(c.code), style = Type.body, maxLines = 1)
-                            Text("ressenti ${deg(c.feels)}", style = Type.bodySmall, maxLines = 1)
+                            Text(S.feelsLike(deg(c.feels)), style = Type.bodySmall, maxLines = 1)
                             if (today != null) Text("${deg(today.min)} / ${deg(today.max)}", style = Type.numSmall, maxLines = 1)
-                            Text("vent ${c.wind.roundToInt()} km/h", style = Type.bodySmall, color = Ink.Faint, maxLines = 1)
+                            Text(S.wind(c.wind.roundToInt()), style = Type.bodySmall, color = Ink.Faint, maxLines = 1)
                         }
                     }
                     if (alert != null) {
@@ -161,7 +161,7 @@ fun CurrentWeatherWidget(size: WidgetSize) {
 fun HourlyForecastWidget(size: WidgetSize) {
     val state by LocalContainer.current.weather.state.collectAsState()
     Column(Modifier.fillMaxSize()) {
-        WidgetLabel("Prochaines heures")
+        WidgetLabel(S.nextHoursLabel)
         Spacer(Modifier.height(10.dp))
         WithData(state) { w ->
             val hours = w.upcomingHours(LocalNow.current.toLocalDateTime())
@@ -169,7 +169,7 @@ fun HourlyForecastWidget(size: WidgetSize) {
                 WidgetSize.Small -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     hours.drop(1).take(3).forEach { h ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(h.time.format(HOUR), style = Type.numSmall, modifier = Modifier.width(34.dp))
+                            Text(hourLabel(h.time), style = Type.numSmall, modifier = Modifier.width(34.dp))
                             Icon(weatherIcon(h.code), null, tint = Ink.Dim, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.weight(1f))
                             Text(deg(h.temp), style = Type.body)
@@ -188,7 +188,7 @@ private fun HourStrip(hours: List<Weather.Hour>) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         hours.forEach { h ->
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(h.time.format(HOUR), style = Type.numSmall, color = Ink.Faint)
+                Text(hourLabel(h.time), style = Type.numSmall, color = Ink.Faint)
                 Icon(weatherIcon(h.code), null, tint = Ink.Dim, modifier = Modifier.size(20.dp))
                 Text(deg(h.temp), style = Type.body)
                 Text(
@@ -245,7 +245,7 @@ private fun HourlyChart(hours: List<Weather.Hour>, modifier: Modifier) {
             val t = measurer.measure(deg(h.temp), tempStyle)
             drawText(t, topLeft = Offset((x(i) - t.size.width / 2f).coerceIn(0f, size.width - t.size.width), y(h.temp) - t.size.height - 4.dp.toPx()))
             drawCircle(Ink.Fg, radius = 2.5.dp.toPx(), center = Offset(x(i), y(h.temp)))
-            val lbl = measurer.measure(h.time.format(HOUR), hourStyle)
+            val lbl = measurer.measure(hourLabel(h.time), hourStyle)
             drawText(lbl, topLeft = Offset((x(i) - lbl.size.width / 2f).coerceIn(0f, size.width - lbl.size.width), size.height - lbl.size.height))
             if (h.precip >= 20) {
                 val p = measurer.measure("${h.precip}%", pctStyle)
@@ -261,7 +261,7 @@ private fun HourlyChart(hours: List<Weather.Hour>, modifier: Modifier) {
 fun DailyForecastWidget(size: WidgetSize) {
     val state by LocalContainer.current.weather.state.collectAsState()
     Column(Modifier.fillMaxSize()) {
-        WidgetLabel(if (size == WidgetSize.Small) "Jours" else "7 jours")
+        WidgetLabel(if (size == WidgetSize.Small) S.daysLabel else S.sevenDaysLabel)
         Spacer(Modifier.height(10.dp))
         WithData(state) { w ->
             val today = LocalNow.current.toLocalDate()

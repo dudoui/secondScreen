@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
 import java.util.TimeZone
+import dev.secondscreen.i18n.S
 
 data class CalEvent(
     val title: String,
@@ -47,7 +48,7 @@ object IcsParser {
                 if (ev.status?.isCancelled == true) continue
                 val ds = ev.dateStart?.value ?: continue
                 val allDay = !ds.hasTime()
-                val title = ev.summary?.value?.trim().orEmpty().ifEmpty { "(sans titre)" }
+                val title = ev.summary?.value?.trim().orEmpty().ifEmpty { S.untitledEvent }
                 val location = ev.location?.value?.trim()?.takeIf { it.isNotEmpty() }
 
                 fun emit(startDate: Date) {

@@ -47,8 +47,12 @@ import dev.secondscreen.ui.LocalSettings
 import kotlinx.coroutines.launch
 import dev.secondscreen.ui.theme.Ink
 import dev.secondscreen.ui.theme.Type
+import dev.secondscreen.i18n.S
 
 private val CoverShape = RoundedCornerShape(10.dp)
+
+/** What the Mac helper calls Apple Music ("Musique" before it was translated); not worth showing. */
+private val AppleMusicNames = setOf("Music", "Musique")
 
 @Composable
 fun NowPlayingWidget(size: WidgetSize) {
@@ -56,12 +60,12 @@ fun NowPlayingWidget(size: WidgetSize) {
     val np = state.data
     if (np == null || !np.hasTrack) {
         Column(Modifier.fillMaxSize()) {
-            WidgetLabel("Musique")
+            WidgetLabel(S.music)
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Outlined.MusicNote, null, tint = Ink.Ghost, modifier = Modifier.size(36.dp))
                     Spacer(Modifier.height(6.dp))
-                    Text(state.error ?: "Rien en lecture", style = Type.bodySmall, color = Ink.Faint)
+                    Text(state.error ?: S.nothingPlaying, style = Type.bodySmall, color = Ink.Faint)
                 }
             }
         }
@@ -101,7 +105,7 @@ fun NowPlayingWidget(size: WidgetSize) {
 @Composable
 private fun TrackInfo(np: NowPlaying, titleSize: Int, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        WidgetLabel(listOfNotNull(if (np.paused) "En pause" else "En écoute", np.source?.takeIf { it != "Musique" }).joinToString(" · "))
+        WidgetLabel(listOfNotNull(if (np.paused) S.paused else S.listening, np.source?.takeIf { it !in AppleMusicNames }).joinToString(" · "))
         Spacer(Modifier.height(8.dp))
         Text(
             np.title.orEmpty(),

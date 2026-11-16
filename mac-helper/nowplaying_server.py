@@ -63,7 +63,7 @@ end run
 MEDIA_CONTROL = shutil.which("media-control") or "/opt/homebrew/bin/media-control"
 APP_NAMES = {
     "com.apple.podcasts": "Podcasts",
-    "com.apple.Music": "Musique",
+    "com.apple.Music": "Music",
     "com.apple.Safari": "Safari",
     "com.spotify.client": "Spotify",
     "com.google.Chrome": "Chrome",
@@ -95,7 +95,7 @@ def music_now():
         parts = osa(NOW_SCRIPT).split(SEP)
     except Exception:
         parts = ["stopped"]
-    now = {"state": parts[0] or "stopped", "source": "Musique"}
+    now = {"state": parts[0] or "stopped", "source": "Music"}
     if len(parts) >= 7:
         now.update(title=parts[1], artist=parts[2], album=parts[3],
                    duration=num(parts[4]), position=num(parts[5]), artId=parts[6])
