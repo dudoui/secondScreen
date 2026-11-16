@@ -24,6 +24,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import dev.secondscreen.i18n.S
 
 data class NowPlaying(
     val playing: Boolean,
@@ -69,7 +70,7 @@ class NowPlayingSource {
         scope.launch(Dispatchers.IO) {
             settings.map { it.macHost.trim() }.distinctUntilChanged().collectLatest { host ->
                 if (host.isEmpty()) {
-                    _state.value = Loadable(error = "Mac non configuré")
+                    _state.value = Loadable(error = S.macNotConfigured)
                     return@collectLatest
                 }
                 val base = (if (host.contains("://")) host else "http://$host").trimEnd('/')
@@ -110,7 +111,7 @@ class NowPlayingSource {
                         throw e
                     } catch (e: Exception) {
                         // Mac asleep, off, or on another network.
-                        _state.value = Loadable(error = "Mac injoignable")
+                        _state.value = Loadable(error = S.macUnreachable)
                         false
                     }
                     delay(if (playing) 3_000 else 6_000)

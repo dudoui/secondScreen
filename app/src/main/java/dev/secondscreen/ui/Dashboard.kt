@@ -34,6 +34,7 @@ import dev.secondscreen.ui.theme.Ink
 import dev.secondscreen.widgets.PageSpec
 import dev.secondscreen.widgets.WidgetHost
 import kotlinx.coroutines.delay
+import dev.secondscreen.i18n.S
 
 @Composable
 fun DashboardScreen(pages: List<PageSpec>, onOpenSettings: () -> Unit) {
@@ -66,7 +67,7 @@ fun DashboardScreen(pages: List<PageSpec>, onOpenSettings: () -> Unit) {
         }
         if (pages.isEmpty()) {
             Text(
-                "Aucune page. Maintenir le doigt appuyé pour configurer.",
+                S.noPagesDashboard,
                 style = Type.bodySmall,
                 color = Ink.Faint,
                 modifier = Modifier.align(Alignment.Center),

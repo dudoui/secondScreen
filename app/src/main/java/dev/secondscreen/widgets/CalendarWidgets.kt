@@ -34,11 +34,11 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import dev.secondscreen.i18n.S
+import dev.secondscreen.i18n.capitalize
+import dev.secondscreen.i18n.formatter
 
 private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
-private val DAY_SHORT = DateTimeFormatter.ofPattern("EEE", Locale.FRENCH)
-private val DAY_HEADER = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH)
 
 // ---- logic ---------------------------------------------------------------------------------
 
@@ -52,19 +52,19 @@ fun whenLabel(e: CalEvent, now: ZonedDateTime): String {
     val zone = now.zone
     val today = now.toLocalDate()
     val startDay = e.start.atZone(zone).toLocalDate()
-    if (e.allDay) return if (!startDay.isAfter(today)) "Aujourd'hui" else dayName(startDay, today)
+    if (e.allDay) return if (!startDay.isAfter(today)) S.today else dayName(startDay, today)
     val nowI = now.toInstant()
-    if (e.isOngoing(nowI)) return "En cours · jusqu'à ${e.end.atZone(zone).format(HHMM)}"
+    if (e.isOngoing(nowI)) return S.ongoingUntil(e.end.atZone(zone).format(HHMM))
     val mins = Duration.between(nowI, e.start).toMinutes()
-    if (mins < 60) return "Dans ${mins.coerceAtLeast(1)} min"
+    if (mins < 60) return S.inMinutes(mins.coerceAtLeast(1))
     val time = e.start.atZone(zone).format(HHMM)
     return if (startDay == today) time else "${dayName(startDay, today)} $time"
 }
 
 private fun dayName(d: LocalDate, today: LocalDate): String = when (d) {
-    today -> "Aujourd'hui"
-    today.plusDays(1) -> "Demain"
-    else -> d.format(DAY_SHORT).replaceFirstChar { it.titlecase(Locale.FRENCH) }
+    today -> S.today
+    today.plusDays(1) -> S.tomorrow
+    else -> S.capitalize(d.format(S.formatter("EEE")))
 }
 
 private fun eventsOn(events: List<CalEvent>, day: LocalDate, now: ZonedDateTime): List<CalEvent> {
@@ -83,13 +83,13 @@ private fun eventsOn(events: List<CalEvent>, day: LocalDate, now: ZonedDateTime)
 fun NextEventWidget(size: WidgetSize) {
     val state by LocalContainer.current.calendar.state.collectAsState()
     Column(Modifier.fillMaxSize()) {
-        WidgetLabel("Prochain")
+        WidgetLabel(S.nextLabel)
         Spacer(Modifier.height(8.dp))
         WithData(state) { events ->
             val now = LocalNow.current
             val next = upcoming(events, now.toInstant()).firstOrNull { !it.allDay }
             if (next == null) {
-                Text("Rien de prévu", style = Type.bodySmall)
+                Text(S.nothingPlanned, style = Type.bodySmall)
             } else {
                 val urgent = isUrgent(next, now.toInstant())
                 Column {
@@ -127,13 +127,13 @@ fun NextEventsWidget(count: Int, size: WidgetSize) {
         WidgetSize.Huge -> maxOf(count, 10)
     }
     Column(Modifier.fillMaxSize()) {
-        WidgetLabel("À venir")
+        WidgetLabel(S.upcomingLabel)
         Spacer(Modifier.height(10.dp))
         WithData(state) { events ->
             val now = LocalNow.current
             val list = upcoming(events, now.toInstant()).take(n)
             if (list.isEmpty()) {
-                Text("Rien de prévu", style = Type.bodySmall)
+                Text(S.nothingPlanned, style = Type.bodySmall)
             } else {
                 Column(Modifier.clipToBounds(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     list.forEach { EventRow(it, now, showDay = true) }
@@ -147,7 +147,7 @@ fun NextEventsWidget(count: Int, size: WidgetSize) {
 fun AgendaWidget(size: WidgetSize) {
     val state by LocalContainer.current.calendar.state.collectAsState()
     Column(Modifier.fillMaxSize()) {
-        WidgetLabel("Agenda · 7 jours")
+        WidgetLabel(S.agendaWeekLabel)
         Spacer(Modifier.height(8.dp))
         WithData(state) { events ->
             val now = LocalNow.current
@@ -159,9 +159,9 @@ fun AgendaWidget(size: WidgetSize) {
                 days.forEach { (day, list) ->
                     item(key = "h$day") {
                         val header = when (day) {
-                            today -> "Aujourd'hui"
-                            today.plusDays(1) -> "Demain"
-                            else -> day.format(DAY_HEADER).replaceFirstChar { it.titlecase(Locale.FRENCH) }
+                            today -> S.today
+                            today.plusDays(1) -> S.tomorrow
+                            else -> S.capitalize(day.format(S.formatter(S.longDatePattern)))
                         }
                         Text(
                             header,
@@ -171,7 +171,7 @@ fun AgendaWidget(size: WidgetSize) {
                         )
                     }
                     if (list.isEmpty()) {
-                        item(key = "e$day") { Text("Rien de prévu", style = Type.bodySmall, color = Ink.Faint) }
+                        item(key = "e$day") { Text(S.nothingPlanned, style = Type.bodySmall, color = Ink.Faint) }
                     }
                     items(list, key = { "$day${it.start}${it.title}" }) {
                         EventRow(it, now, showDay = false, large = size == WidgetSize.Huge)
@@ -191,12 +191,12 @@ private fun EventRow(e: CalEvent, now: ZonedDateTime, showDay: Boolean, large: B
     val startDay = e.start.atZone(zone).toLocalDate()
     val today = now.toLocalDate()
     val time = when {
-        e.allDay -> "Jour"
-        e.isOngoing(nowI) -> "en cours"
+        e.allDay -> S.allDayShort
+        e.isOngoing(nowI) -> S.ongoingShort
         else -> e.start.atZone(zone).format(HHMM)
     }
     val dayPrefix = if (showDay && !startDay.isEqual(today) && !(e.allDay && startDay.isBefore(today))) {
-        if (startDay == today.plusDays(1)) "dem." else startDay.format(DAY_SHORT)
+        if (startDay == today.plusDays(1)) S.tomorrowShort else startDay.format(S.formatter("EEE"))
     } else null
 
     Row(verticalAlignment = Alignment.Top) {

@@ -21,6 +21,7 @@ import okhttp3.Request
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import dev.secondscreen.i18n.S
 
 /** Last known value of a source, plus when it was fetched and the latest error (if any). */
 data class Loadable<T>(
@@ -43,7 +44,7 @@ object Http {
         val req = Request.Builder().url(fixed).header("User-Agent", "SecondScreen/1.0 (Android)").build()
         client.newCall(req).execute().use { r ->
             if (!r.isSuccessful) throw IOException("HTTP ${r.code}")
-            r.body?.string() ?: throw IOException("Réponse vide")
+            r.body?.string() ?: throw IOException(S.emptyResponse)
         }
     }
 }

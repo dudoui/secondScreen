@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.net.URLEncoder
+import dev.secondscreen.i18n.S
 
 class WeatherSource(cacheDir: File) : PollingSource<WeatherSource.Key, Weather>(
     name = "weather",
@@ -15,7 +16,7 @@ class WeatherSource(cacheDir: File) : PollingSource<WeatherSource.Key, Weather>(
 ) {
     data class Key(val lat: Double, val lon: Double)
 
-    override val notConfiguredMessage = "Lieu non configuré"
+    override val notConfiguredMessage get() = S.placeNotConfigured
     override fun keyOf(s: Settings) = Key(s.lat, s.lon)
     override suspend fun fetch(key: Key) = Http.get(OpenMeteo.url(key.lat, key.lon))
     override fun parse(raw: String, key: Key) = OpenMeteo.parse(raw)
@@ -41,7 +42,7 @@ object Geocoder {
 
     suspend fun search(query: String): Place? {
         val q = URLEncoder.encode(query.trim(), "UTF-8")
-        val raw = Http.get("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=1&language=fr&format=json")
+        val raw = Http.get("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=1&language=${S.locale.language}&format=json")
         val it = json.decodeFromString<Resp>(raw).results.firstOrNull() ?: return null
         val label = listOfNotNull(it.name, it.admin1, it.country).distinct().joinToString(", ")
         return Place(label, it.latitude, it.longitude)

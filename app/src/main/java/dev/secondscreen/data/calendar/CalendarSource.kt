@@ -9,13 +9,14 @@ import java.util.concurrent.ConcurrentHashMap
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import dev.secondscreen.i18n.S
 
 class CalendarSource(cacheDir: File) : PollingSource<List<String>, List<CalEvent>>(
     name = "calendar",
     cacheDir = cacheDir,
     intervalMs = 5 * 60_000L,
 ) {
-    override val notConfiguredMessage = "Aucun flux iCal"
+    override val notConfiguredMessage get() = S.noIcalFeed
 
     override fun keyOf(s: Settings) = s.icsUrls.takeIf { it.isNotEmpty() }
 

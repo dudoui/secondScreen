@@ -2,6 +2,7 @@ package dev.secondscreen
 
 import dev.secondscreen.data.weather.OpenMeteo
 import dev.secondscreen.data.weather.WeatherCodes
+import dev.secondscreen.i18n.S
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
@@ -21,6 +22,6 @@ class WeatherParseTest {
         assertEquals(false, w.current.isDay)
         assertEquals(1, w.hours.size) // null temperature dropped
         assertEquals(LocalDate.of(2026, 11, 15), w.days[1].date)
-        assertEquals("Pluie", WeatherCodes.label(w.current.code))
+        assertEquals(S.rain, WeatherCodes.label(w.current.code))
     }
 }

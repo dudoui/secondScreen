@@ -74,6 +74,8 @@ import dev.secondscreen.widgets.WidgetHost
 import dev.secondscreen.widgets.WidgetSize
 import dev.secondscreen.widgets.WidgetSpec
 import dev.secondscreen.widgets.displayName
+import dev.secondscreen.widgets.label
+import dev.secondscreen.i18n.S
 
 private val Shape = RoundedCornerShape(12.dp)
 
@@ -114,29 +116,29 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 pages.forEachIndexed { i, p ->
-                    Chip(p.name.ifBlank { "Sans titre" }, selected = i == index) { selectPage(i) }
+                    Chip(p.name.ifBlank { S.untitledPage }, selected = i == index) { selectPage(i) }
                 }
-                Chip("＋ Page", selected = false) {
-                    onChange(pages.addPage("Page ${pages.size + 1}"))
+                Chip(S.addPage, selected = false) {
+                    onChange(pages.addPage(S.pageNumber(pages.size + 1)))
                     selectPage(pages.size)
                 }
             }
             if (page != null) {
-                SmallAction("Renommer") { dialog = EditorDialog.Rename }
+                SmallAction(S.rename) { dialog = EditorDialog.Rename }
                 SmallAction("◀", enabled = index > 0) {
                     onChange(pages.movePage(index, -1)); pageIndex = index - 1
                 }
                 SmallAction("▶", enabled = index < pages.lastIndex) {
                     onChange(pages.movePage(index, 1)); pageIndex = index + 1
                 }
-                SmallAction("Supprimer") { dialog = EditorDialog.DeletePage }
+                SmallAction(S.delete) { dialog = EditorDialog.DeletePage }
             }
-            SmallAction("Réinitialiser") { dialog = EditorDialog.Reset }
+            SmallAction(S.reset) { dialog = EditorDialog.Reset }
         }
 
         if (page == null) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("Aucune page. Touchez « ＋ Page » pour commencer.", style = Type.bodySmall, color = Ink.Faint)
+                Text(S.noPagesEditor, style = Type.bodySmall, color = Ink.Faint)
             }
             return@Column
         }
@@ -170,7 +172,7 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
             ) {
                 if (selected == null) {
                     Text(
-                        "Touchez une case vide pour ajouter un widget, ou un widget pour le modifier.",
+                        S.editorHint,
                         style = Type.bodySmall,
                         color = Ink.Faint,
                     )
@@ -178,24 +180,24 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
                     Text(selected.spec.displayName, style = Type.body)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "${selected.size.label}\nÉtirez le coin ↘ pour changer la taille.",
+                        "${selected.size.label}\n${S.resizeHint}",
                         style = Type.bodySmall,
                         color = Ink.Faint,
                     )
                     Spacer(Modifier.height(4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Chip("Déplacer", selected = moving) { moving = !moving }
-                        Chip("Supprimer", selected = false) {
+                        Chip(S.move, selected = moving) { moving = !moving }
+                        Chip(S.delete, selected = false) {
                             editPage { it.remove(selected.id) }
                             selectedId = null
                             moving = false
                         }
                     }
                     if (selected.spec.hasParams) {
-                        Chip("Réglages", selected = false) { dialog = EditorDialog.Params(selected.id) }
+                        Chip(S.settings, selected = false) { dialog = EditorDialog.Params(selected.id) }
                     }
                     if (moving) {
-                        Text("Touchez une case en surbrillance.", style = Type.bodySmall, color = Ink.Faint)
+                        Text(S.tapHighlightedCell, style = Type.bodySmall, color = Ink.Faint)
                     }
                 }
             }
@@ -223,7 +225,7 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
         }
         is EditorDialog.AddNews -> page?.let { p ->
             NewsDialog(
-                heading = "Ajouter un flux RSS",
+                heading = S.addRssFeed,
                 initial = WidgetSpec.News(title = ""),
                 known = knownFeeds,
                 onDone = { spec ->
@@ -251,7 +253,7 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
         }
         EditorDialog.Rename -> page?.let { p ->
             TextDialog(
-                title = "Renommer la page",
+                title = S.renamePage,
                 initial = p.name,
                 onDone = { onChange(pages.renamePage(index, it.trim())); dialog = null },
                 onDismiss = { dialog = null },
@@ -259,8 +261,8 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
         }
         EditorDialog.DeletePage -> page?.let { p ->
             ConfirmDialog(
-                text = "Supprimer la page « ${p.name} » et ses widgets ?",
-                confirm = "Supprimer",
+                text = S.deletePageConfirm(p.name),
+                confirm = S.delete,
                 onConfirm = {
                     onChange(pages.deletePage(index))
                     selectPage((index - 1).coerceAtLeast(0))
@@ -270,8 +272,8 @@ fun LayoutEditor(pages: List<PageSpec>, onChange: (List<PageSpec>) -> Unit, modi
             )
         }
         EditorDialog.Reset -> ConfirmDialog(
-            text = "Remplacer toutes les pages par la disposition par défaut ?",
-            confirm = "Réinitialiser",
+            text = S.resetConfirm,
+            confirm = S.reset,
             onConfirm = {
                 onChange(DefaultLayout.pages())
                 selectPage(0)
@@ -474,15 +476,15 @@ private fun AddWidgetDialog(onAdd: (WidgetSpec) -> Unit, onDismiss: () -> Unit) 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Ink.Card,
-        title = { Text("Ajouter un widget", color = Ink.Fg) },
+        title = { Text(S.addWidget, color = Ink.Fg) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AllWidgetSpecs.forEach { spec -> Chip(spec.displayName, selected = false) { onAdd(spec) } }
-                Text("Ajouté en 1×1 : étirez ensuite son coin ↘ pour l'agrandir.", style = Type.bodySmall, color = Ink.Faint)
+                Text(S.addedSmallHint, style = Type.bodySmall, color = Ink.Faint)
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler", color = Ink.Dim) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(S.cancel, color = Ink.Dim) } },
     )
 }
 
@@ -496,7 +498,7 @@ private fun ParamsDialog(spec: WidgetSpec, onDone: (WidgetSpec) -> Unit, onDismi
         text = {
             when (val d = draft) {
                 is WidgetSpec.NextEvents -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Nombre d'évènements", color = Ink.Dim, modifier = Modifier.weight(1f))
+                    Text(S.eventCount, color = Ink.Dim, modifier = Modifier.weight(1f))
                     SmallAction("−", enabled = d.count > 1) { draft = d.copy(count = d.count - 1) }
                     Text("${d.count}", color = Ink.Fg, fontSize = 18.sp)
                     SmallAction("+", enabled = d.count < 5) { draft = d.copy(count = d.count + 1) }
@@ -504,8 +506,8 @@ private fun ParamsDialog(spec: WidgetSpec, onDone: (WidgetSpec) -> Unit, onDismi
                 else -> Unit
             }
         },
-        confirmButton = { TextButton(onClick = { onDone(draft) }) { Text("OK", color = Ink.Fg) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler", color = Ink.Dim) } },
+        confirmButton = { TextButton(onClick = { onDone(draft) }) { Text(S.ok, color = Ink.Fg) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(S.cancel, color = Ink.Dim) } },
     )
 }
 
@@ -519,7 +521,7 @@ private fun knownFeeds(pages: List<PageSpec>, defaultUrl: String): List<KnownFee
     return (used + KnownFeed("", default))
         .filter { it.url.isNotEmpty() }
         .distinctBy { it.url }
-        .map { if (it.title.isBlank()) it.copy(title = feedHost(it.url) ?: "Actualités") else it }
+        .map { if (it.title.isBlank()) it.copy(title = feedHost(it.url) ?: S.news) else it }
 }
 
 /** Picks a news widget's feed: type any address, or tap one already in use. */
@@ -539,10 +541,10 @@ private fun NewsDialog(
         title = { Text(heading, color = Ink.Fg) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Field("Adresse du flux (URL)", url, { url = it }, keyboardType = KeyboardType.Uri)
-                Field("Titre (optionnel)", title, { title = it })
+                Field(S.feedUrlLabel, url, { url = it }, keyboardType = KeyboardType.Uri)
+                Field(S.feedTitleLabel, title, { title = it })
                 if (known.isNotEmpty()) {
-                    Text("Flux déjà utilisés", style = Type.bodySmall, color = Ink.Faint)
+                    Text(S.feedsInUse, style = Type.bodySmall, color = Ink.Faint)
                     known.forEach { feed ->
                         val host = feedHost(feed.url)
                         val label = if (host == null || host == feed.title) feed.title else "${feed.title} · $host"
@@ -553,7 +555,7 @@ private fun NewsDialog(
                     }
                 }
                 Text(
-                    "Sans adresse, le widget suit le flux RSS des réglages généraux.",
+                    S.feedFallbackHint,
                     style = Type.bodySmall,
                     color = Ink.Faint,
                 )
@@ -562,11 +564,11 @@ private fun NewsDialog(
         confirmButton = {
             TextButton(onClick = {
                 val u = normalizeFeedUrl(url)
-                val t = title.trim().ifEmpty { feedHost(u) ?: "Actualités" }
+                val t = title.trim().ifEmpty { feedHost(u) ?: S.news }
                 onDone(WidgetSpec.News(title = t, url = u))
-            }) { Text("OK", color = Ink.Fg) }
+            }) { Text(S.ok, color = Ink.Fg) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler", color = Ink.Dim) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(S.cancel, color = Ink.Dim) } },
     )
 }
 
@@ -577,9 +579,9 @@ private fun TextDialog(title: String, initial: String, onDone: (String) -> Unit,
         onDismissRequest = onDismiss,
         containerColor = Ink.Card,
         title = { Text(title, color = Ink.Fg) },
-        text = { Field("Nom", text, { text = it }) },
-        confirmButton = { TextButton(onClick = { onDone(text) }) { Text("OK", color = Ink.Fg) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler", color = Ink.Dim) } },
+        text = { Field(S.nameLabel, text, { text = it }) },
+        confirmButton = { TextButton(onClick = { onDone(text) }) { Text(S.ok, color = Ink.Fg) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(S.cancel, color = Ink.Dim) } },
     )
 }
 
@@ -590,6 +592,6 @@ private fun ConfirmDialog(text: String, confirm: String, onConfirm: () -> Unit, 
         containerColor = Ink.Card,
         text = { Text(text, color = Ink.Fg) },
         confirmButton = { TextButton(onClick = onConfirm) { Text(confirm, color = Ink.Accent) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler", color = Ink.Dim) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(S.cancel, color = Ink.Dim) } },
     )
 }

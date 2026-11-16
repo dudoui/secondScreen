@@ -2,7 +2,7 @@
 
 Always-on Android dashboard: black & white widgets on swipeable pages — clock, calendar, Open-Meteo weather, RSS news (Le Monde by default) and what is playing on your Mac.
 
-Requires Android 8.1 (API 27) or later. The UI is in French.
+Requires Android 8.1 (API 27) or later. The UI is in English or French: it follows the phone's language, French when the phone is in French and English otherwise.
 
 ## Build
 
@@ -29,15 +29,15 @@ The dashboard stays on and shows over the lock screen.
 
 ## Settings
 
-Hold a finger still anywhere on the dashboard for about a second. The **Général** tab has:
+Hold a finger still anywhere on the dashboard for about a second. The **General** tab has (labels are given in English here):
 
-- **Calendriers iCal** — optional extra calendars, one iCal URL per line (`webcal://` works), on top of the phone's own calendars.
-- **Ville** — type a city and tap **Chercher** before saving; the weather uses the place it finds.
-- **Flux RSS** — the news feed (RSS or Atom).
+- **Extra iCal calendars** — optional extra calendars, one iCal URL per line (`webcal://` works), on top of the phone's own calendars.
+- **City** — type a city and tap **Search** before saving; the weather uses the place it finds.
+- **Default RSS feed** — the news feed (RSS or Atom).
 - **Mac** — address of the now-playing helper, see below.
-- **Nuit** — start and end hour (23 h to 7 h by default) during which the screen dims to minimum brightness. Set both to the same hour to turn it off.
+- **Night** — start and end hour (23 h to 7 h by default) during which the screen dims to minimum brightness. Set both to the same hour to turn it off.
 
-**Enregistrer** saves; **Annuler** discards every change.
+**Save** saves; **Cancel** discards every change.
 
 ## Now playing (Mac helper)
 
@@ -68,13 +68,19 @@ On the dashboard, tap a cover to switch it between greyscale and colour.
 
 Open the settings → **Pages** tab. Each page is a 4×2 grid:
 
-- **＋ Page**, *Renommer*, ◀ ▶ (reorder), *Supprimer* manage pages; *Réinitialiser* restores the default layout.
+- **＋ Page**, *Rename*, ◀ ▶ (reorder), *Delete* manage pages; *Reset* restores the default layout.
 - Tap an empty cell to add a widget there (it starts at 1×1).
 - Tap a widget to select it, then drag its ↘ corner handle to stretch or shrink it; it snaps to the nearest size that fits.
 - A selected widget can also be moved (tap a highlighted cell), configured (event count, news title) or deleted.
 
 Sizes: Small 1×1, Medium 2×1, Large 2×2, Huge 4×2. Every widget adapts its content to its size.
 The default layout lives in `app/src/main/java/dev/secondscreen/config/Layout.kt`.
+
+## Languages
+
+All the text lives in `app/src/main/java/dev/secondscreen/i18n/Strings.kt`: a `Strings` interface with one object per language (`En`, `Fr`). To add a language, add an object implementing `Strings` and return it from `stringsFor`; the build fails until every entry is translated.
+
+Day and month names follow the language of the text. Times stay on the 24-hour clock in both languages. The default pages are named in the language in use when they are created; pages you have already saved keep their names.
 
 ## Colour
 

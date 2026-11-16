@@ -16,16 +16,18 @@ import dev.secondscreen.widgets.WidgetSpec.NextEvent
 import dev.secondscreen.widgets.WidgetSpec.NextEvents
 import dev.secondscreen.widgets.WidgetSpec.NowPlaying
 import dev.secondscreen.widgets.sized
+import dev.secondscreen.i18n.S
 
 /**
- * The layout used until the user edits it (and restored by "Réinitialiser"). Pages are in swipe
+ * The layout used until the user edits it (and restored by "Reset"). Pages are in swipe
  * order; each is a 4×2 grid and widgets are packed first-fit in the order listed.
  * Sizes: Small 1×1, Medium 2×1, Large 2×2, Huge 4×2 (whole page).
  */
+/** Page names follow the language in use when the layout is created. */
 object DefaultLayout {
-    val declared: List<Pair<String, List<WidgetSlot>>> = listOf(
+    val declared: List<Pair<String, List<WidgetSlot>>> get() = listOf(
         Pair(
-            "Accueil",
+            S.pageHome,
             listOf(
                 Clock sized Medium,
                 CurrentWeather sized Small,
@@ -35,7 +37,7 @@ object DefaultLayout {
             ),
         ),
         Pair(
-            "Musique",
+            S.music,
             listOf(
                 NowPlaying sized Large,
                 Clock sized Medium,
@@ -43,7 +45,7 @@ object DefaultLayout {
             ),
         ),
         Pair(
-            "Agenda",
+            S.agenda,
             listOf(
                 Agenda sized Large,
                 CurrentWeather sized Medium,
@@ -51,14 +53,14 @@ object DefaultLayout {
             ),
         ),
         Pair(
-            "Météo",
+            S.pageWeather,
             listOf(
                 HourlyForecast sized Large,
                 DailyForecast sized Large,
             ),
         ),
-        Pair("Actualités", listOf(News("Le Monde · À la une") sized Huge)),
-        Pair("Horloge", listOf(Clock sized Huge)),
+        Pair(S.news, listOf(News(S.defaultFeedTitle) sized Huge)),
+        Pair(S.clock, listOf(Clock sized Huge)),
     )
 
     /** Fresh copy with positions (and new ids) each call. */

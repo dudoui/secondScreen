@@ -12,6 +12,7 @@ import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import javax.xml.parsers.DocumentBuilderFactory
+import dev.secondscreen.i18n.S
 
 data class NewsItem(
     val title: String,
@@ -72,7 +73,7 @@ class RssSource(cacheDir: File, private val url: String? = null) : PollingSource
     cacheDir = cacheDir,
     intervalMs = 10 * 60_000L,
 ) {
-    override val notConfiguredMessage = "Aucun flux RSS configuré"
+    override val notConfiguredMessage get() = S.noRssFeed
     override fun keyOf(s: Settings) = (url ?: s.rssUrl).trim().takeIf { it.isNotEmpty() }
     override suspend fun fetch(key: String) = Http.get(key)
     override fun parse(raw: String, key: String) =

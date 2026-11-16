@@ -35,14 +35,15 @@ import dev.secondscreen.ui.theme.Ink
 import dev.secondscreen.ui.theme.Type
 import java.time.Duration
 import java.time.Instant
+import dev.secondscreen.i18n.S
 
 private fun ago(t: Instant?, now: Instant): String {
     if (t == null) return ""
     val m = Duration.between(t, now).toMinutes().coerceAtLeast(0)
     return when {
-        m < 60 -> "$m min"
-        m < 24 * 60 -> "${m / 60} h"
-        else -> "${m / (24 * 60)} j"
+        m < 60 -> S.minutesAgo(m)
+        m < 24 * 60 -> S.hoursAgo(m / 60)
+        else -> S.daysAgo(m / (24 * 60))
     }
 }
 

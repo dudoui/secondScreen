@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
+import dev.secondscreen.i18n.S
 
 data class Weather(val current: Current, val hours: List<Hour>, val days: List<Day>) {
     data class Current(val time: LocalDateTime, val temp: Double, val feels: Double, val code: Int, val wind: Double, val isDay: Boolean)
@@ -25,18 +26,18 @@ object WeatherCodes {
     fun isWet(code: Int) = code in 51..67 || code in 71..77 || code in 80..86 || code in 95..99
 
     fun label(code: Int): String = when (code) {
-        0 -> "Ciel clair"
-        1 -> "Peu nuageux"
-        2 -> "Partiellement nuageux"
-        3 -> "Couvert"
-        45, 48 -> "Brouillard"
-        in 51..57 -> "Bruine"
-        in 61..65 -> "Pluie"
-        66, 67 -> "Pluie verglaçante"
-        in 71..77 -> "Neige"
-        in 80..82 -> "Averses"
-        85, 86 -> "Averses de neige"
-        in 95..99 -> "Orage"
+        0 -> S.clearSky
+        1 -> S.mainlyClear
+        2 -> S.partlyCloudy
+        3 -> S.overcast
+        45, 48 -> S.fog
+        in 51..57 -> S.drizzle
+        in 61..65 -> S.rain
+        66, 67 -> S.freezingRain
+        in 71..77 -> S.snow
+        in 80..82 -> S.showers
+        85, 86 -> S.snowShowers
+        in 95..99 -> S.thunderstorm
         else -> "—"
     }
 }

@@ -27,15 +27,28 @@ import dev.secondscreen.ui.theme.Type
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
+import dev.secondscreen.i18n.S
 
 /** How many grid cells (of the 4×2 page grid) a widget occupies. */
 @Serializable
-enum class WidgetSize(val cols: Int, val rows: Int, val label: String) {
-    Small(1, 1, "Petit 1×1"),
-    Medium(2, 1, "Moyen 2×1"),
-    Large(2, 2, "Grand 2×2"),
-    Huge(4, 2, "Plein écran 4×2"),
+enum class WidgetSize(val cols: Int, val rows: Int) {
+    Small(1, 1),
+    Medium(2, 1),
+    Large(2, 2),
+    Huge(4, 2),
 }
+
+/** "Small 1×1", shown in the layout editor. */
+val WidgetSize.label: String
+    get() {
+        val name = when (this) {
+            WidgetSize.Small -> S.sizeSmall
+            WidgetSize.Medium -> S.sizeMedium
+            WidgetSize.Large -> S.sizeLarge
+            WidgetSize.Huge -> S.sizeHuge
+        }
+        return "$name $cols×$rows"
+    }
 
 @Serializable
 sealed interface WidgetSpec {
@@ -54,15 +67,15 @@ sealed interface WidgetSpec {
 /** Human-readable name, shown in the layout editor. */
 val WidgetSpec.displayName: String
     get() = when (this) {
-        WidgetSpec.Clock -> "Horloge"
-        WidgetSpec.NextEvent -> "Prochain évènement"
-        is WidgetSpec.NextEvents -> "Prochains évènements"
-        WidgetSpec.Agenda -> "Agenda"
-        WidgetSpec.CurrentWeather -> "Météo actuelle"
-        WidgetSpec.HourlyForecast -> "Prévisions horaires"
-        WidgetSpec.DailyForecast -> "Prévisions jours"
-        is WidgetSpec.News -> "Actualités"
-        WidgetSpec.NowPlaying -> "Musique"
+        WidgetSpec.Clock -> S.clock
+        WidgetSpec.NextEvent -> S.nextEvent
+        is WidgetSpec.NextEvents -> S.nextEvents
+        WidgetSpec.Agenda -> S.agenda
+        WidgetSpec.CurrentWeather -> S.currentWeather
+        WidgetSpec.HourlyForecast -> S.hourlyForecast
+        WidgetSpec.DailyForecast -> S.dailyForecast
+        is WidgetSpec.News -> S.news
+        WidgetSpec.NowPlaying -> S.music
     }
 
 /** Every widget type, with default parameters, in the order offered to the user. */
@@ -147,7 +160,7 @@ fun <T> WithData(state: Loadable<T>, modifier: Modifier = Modifier, content: @Co
             content(data)
         } else {
             Text(
-                state.error ?: "Chargement…",
+                state.error ?: S.loading,
                 style = Type.bodySmall,
                 color = Ink.Faint,
                 textAlign = TextAlign.Center,

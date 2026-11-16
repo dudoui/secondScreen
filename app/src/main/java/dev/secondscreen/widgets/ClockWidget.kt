@@ -20,11 +20,11 @@ import dev.secondscreen.ui.LocalNow
 import dev.secondscreen.ui.theme.Ink
 import dev.secondscreen.ui.theme.Type
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import dev.secondscreen.i18n.S
+import dev.secondscreen.i18n.capitalize
+import dev.secondscreen.i18n.formatter
 
 private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
-private val LONG_DATE = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH)
-private val SHORT_DATE = DateTimeFormatter.ofPattern("EEE d MMM", Locale.FRENCH)
 
 @Composable
 fun ClockWidget(size: WidgetSize) {
@@ -46,8 +46,8 @@ fun ClockWidget(size: WidgetSize) {
                 WidgetSize.Huge -> 0.6f to 24.sp
             }
             Text(time, style = Type.num.sized(fitFontSize(w, h * timeShare, time.length)), maxLines = 1)
-            val date = now.format(if (size == WidgetSize.Small) SHORT_DATE else LONG_DATE)
-                .replaceFirstChar { it.titlecase(Locale.FRENCH) }
+            val datePattern = if (size == WidgetSize.Small) S.shortDatePattern else S.longDatePattern
+            val date = S.capitalize(now.format(S.formatter(datePattern)))
             Text(date, fontSize = dateSize, color = Ink.Dim, maxLines = 1)
             if (size == WidgetSize.Large || size == WidgetSize.Huge) {
                 Spacer(Modifier.height(if (size == WidgetSize.Huge) 20.dp else 12.dp))

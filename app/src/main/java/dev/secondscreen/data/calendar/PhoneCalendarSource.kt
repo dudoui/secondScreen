@@ -23,6 +23,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
+import dev.secondscreen.i18n.S
 
 /**
  * Reads events from the calendars synced on the phone (e.g. the Google account), through Android's
@@ -62,7 +63,7 @@ class PhoneCalendarSource(private val context: Context) {
                         _state.value.copy(error = e.message ?: e.javaClass.simpleName)
                     }
                 } else {
-                    _state.value = Loadable(error = PERMISSION_MISSING)
+                    _state.value = Loadable(error = S.calendarPermissionMissing)
                 }
                 withTimeoutOrNull(5 * 60_000L) { wake.receive() }
             }
@@ -104,7 +105,7 @@ class PhoneCalendarSource(private val context: Context) {
                 if (end <= start) end = if (allDay) start.plus(1, ChronoUnit.DAYS) else start
                 if (end <= from || start >= to) continue
                 out += CalEvent(
-                    title = c.getString(0)?.trim().orEmpty().ifEmpty { "(sans titre)" },
+                    title = c.getString(0)?.trim().orEmpty().ifEmpty { S.untitledEvent },
                     start = start,
                     end = end,
                     allDay = allDay,
@@ -114,9 +115,5 @@ class PhoneCalendarSource(private val context: Context) {
             }
         }
         return out
-    }
-
-    companion object {
-        const val PERMISSION_MISSING = "Accès à l'agenda non autorisé (réglages Android → Applis → Second Screen)"
     }
 }
