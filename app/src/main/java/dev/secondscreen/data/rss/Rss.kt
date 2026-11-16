@@ -66,14 +66,25 @@ object RssParser {
         s.replace(Regex("<[^>]*>"), " ").replace(Regex("\\s+"), " ").trim().takeIf { it.isNotEmpty() }
 }
 
-class RssSource(cacheDir: File) : PollingSource<String, List<NewsItem>>(
+/** Polls one feed: [url], or the default feed from the settings when [url] is null. */
+class RssSource(cacheDir: File, private val url: String? = null) : PollingSource<String, List<NewsItem>>(
     name = "rss",
     cacheDir = cacheDir,
     intervalMs = 10 * 60_000L,
 ) {
     override val notConfiguredMessage = "Aucun flux RSS configuré"
-    override fun keyOf(s: Settings) = s.rssUrl.trim().takeIf { it.isNotEmpty() }
+    override fun keyOf(s: Settings) = (url ?: s.rssUrl).trim().takeIf { it.isNotEmpty() }
     override suspend fun fetch(key: String) = Http.get(key)
     override fun parse(raw: String, key: String) =
         RssParser.parse(raw).sortedByDescending { it.published ?: java.time.Instant.EPOCH }
+}
+
+/** "https://www.lemonde.fr/rss/une.xml" → "lemonde.fr"; null when [url] has no host. */
+fun feedHost(url: String): String? =
+    runCatching { java.net.URI(url.trim()).host }.getOrNull()?.removePrefix("www.")?.takeIf { it.isNotEmpty() }
+
+/** Trims, and assumes https when the user typed an address without a scheme. */
+fun normalizeFeedUrl(input: String): String {
+    val t = input.trim()
+    return if (t.isEmpty() || t.contains("://")) t else "https://$t"
 }

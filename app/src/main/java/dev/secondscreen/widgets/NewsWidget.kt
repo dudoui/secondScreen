@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -49,8 +50,9 @@ private fun ago(t: Instant?, now: Instant): String {
 private fun isFresh(t: Instant?, now: Instant) = t != null && Duration.between(t, now).toMinutes() < 30
 
 @Composable
-fun NewsWidget(title: String, size: WidgetSize) {
-    val state by LocalContainer.current.news.state.collectAsState()
+fun NewsWidget(title: String, url: String, size: WidgetSize) {
+    val container = LocalContainer.current
+    val state by remember(container, url) { container.news(url) }.state.collectAsState()
     Column(Modifier.fillMaxSize()) {
         WidgetLabel(title)
         Spacer(Modifier.height(10.dp))
