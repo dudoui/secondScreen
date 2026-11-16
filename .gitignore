@@ -1,0 +1,22 @@
+# Build output and tool caches
+.gradle/
+.kotlin/
+build/
+*.apk
+*.aab
+__pycache__/
+
+# Machine-specific
+local.properties
+.idea/
+*.iml
+.DS_Store
+
+# Secrets: never commit signing keys or credentials
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+google-services.json
+.env
+.env.*
